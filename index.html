@@ -1,0 +1,172 @@
+
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset='UTF-8'/>
+<meta name='viewport' content='width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no' />
+
+<script src="https://code.jquery.com/jquery-1.11.0.min.js"></script>
+<script src='https://api.tiles.mapbox.com/mapbox.js/v1.6.2/mapbox.js'></script>
+<link href='https://api.tiles.mapbox.com/mapbox.js/v1.6.2/mapbox.css' rel='stylesheet' />
+<link href='http://fonts.googleapis.com/css?family=Open+Sans:400,300' rel='stylesheet' type='text/css'>
+<link rel="stylesheet" href="http://netdna.bootstrapcdn.com/bootstrap/3.1.1/css/bootstrap.min.css">
+<link href='css/adventure.css' rel='stylesheet' />
+<style>
+
+</style>
+</head>
+<body>
+<div id='map'></div>
+<article>
+  <section class="cover active">
+    <div class="img-wrapper"><img src="img/avatar2.png" alt="" height="100" width="" class="img-circle" /></div>
+    <h1>My Adventure</h1>
+    <p>Sun Sen</p>
+    <p class="play-control"><span class="glyphicon glyphicon-play-circle"></span></p>
+  </section>
+  <section>
+    <h2>Wafangdian, China</h2>
+    <p><span class="time">November 1988.</span></p> 
+    <p>I was born in Wafangdian, a small city in the north eastern of China. I greeted the world warmly in my own way -- crying loudly and continuously. But my parents didn't get the message and thought that I was a crybaby.</p> 
+    <p>I lived in this city until 14. Then I went to a boarding school in a bigger city nearby -- Dalian.</p>
+    <p class="play-control"><span class="glyphicon glyphicon-step-forward"></span></p>
+  </section>
+   <section>
+    <h2>Dalian, China</h2>
+    <p><span class="time">Septemper 2004.</span></p>
+    <p>Dalian is a coastal city with over 600 million people. I spent three years there for the high school. The schoolmates and teachers were wonderful, but the food in the canteens was not.</p>
+    <p class="play-control"><span class="glyphicon glyphicon-step-forward"></span></p>
+  </section>
+  <section>
+    <h2>Peking, China</h2>
+    <p><span class="time">September 2006.</span></p> 
+    <p>I entered Peking University, the best university in China. The five-year-study of urban planning changed the wiring of my brain and enabled it to think not linearly but systematically.</p> 
+    <p>At the same time, Europe is getting more and more attractive for me after I've learned German for two years.</p>
+    <p class="play-control"><span class="glyphicon glyphicon-step-forward"></span></p>
+  </section>
+  <section>
+    <h2>Heidelberg, Germany</h2>
+    <p><span class="time">September, 2012.</span> After one year's internship in Peking, I began my master studies at Heidelberg University, the oldest university in Germany. I chose Geographical Information Science as my major because I believe that it would help people to make better decisions in many domains, including urban planning. So I became a programmer after a short detour and now work as a student assistant at the institute.</p>
+    <p class="play-control"><span class="glyphicon glyphicon-step-forward"></span></p>
+  </section>
+  <section>
+    <p>to be continued...</p>
+    <p class="play-control"><span class="glyphicon glyphicon-repeat"></span></p>
+  </section>
+</article>
+
+<script src='js/data.js'></script>
+
+
+<script>
+
+var map = L.map('map', {
+      zoomControl: false
+
+    })
+    .setView([40, 36], 3)
+    .addLayer(L.mapbox.tileLayer('examples.map-9ijuk24y', {
+        detectRetina: true,
+        trackResize: true
+    }));
+
+
+map.touchZoom.disable();
+map.doubleClickZoom.disable();
+map.scrollWheelZoom.disable();
+
+var i, len = geojson.features.length;
+
+for(i=1; i<len; i++) {
+    var coords = geojson.features[i].geometry.coordinates;
+        var marker = L.marker(new L.LatLng(coords[1], coords[0]), 
+            {icon: L.mapbox.marker.icon({
+                'marker-symbol': geojson.features[i].properties.marker,
+                'marker-color': '#FFA500'
+            }), 
+            title: geojson.features[i].properties.name
+        });
+        marker.addTo(map);
+}
+
+// Array of story section elements.
+var sections = $('section');
+
+function setActiveMarker(index) {
+  var feature = geojson.features[index];
+  var coords = feature.geometry.coordinates;
+  var zoom1 = feature.properties.zoom[0];
+  var zoom2 = feature.properties.zoom[1];
+  var currentCenter = map.getCenter();
+  moveSlowly([currentCenter.lat, currentCenter.lng], [coords[1], coords[0]], zoom1, zoom2);
+}
+
+var tweens = [],
+    sum = 0;
+
+for (var i = 0; i < 10; i++) {
+  if (i < 5) {
+    tweens[i] = i + 1;
+  } else {
+    tweens[i] = 10 - i;
+  }
+    sum += tweens[i];
+}
+
+function moveSlowly(start, end, zoom1, zoom2){
+
+
+  var deltaX = end[0] - start[0],
+      deltaY = end[1] - start[1];
+  var j = 0;
+  map.setZoom(zoom1);
+  var move = setInterval(function(){
+    if(tweens[j]) {
+      var center = map.getCenter();
+      var cunrrentZoomLevel = map.getZoom();
+      var newLat = center.lat + (deltaX / sum) * tweens[j];
+      var newLng = center.lng + (deltaY / sum) * tweens[j];
+      map.setView([newLat, newLng], cunrrentZoomLevel);
+      j += 1;
+    } else {
+      clearInterval(move);
+      map.setView(end, zoom1);
+      zoomSlowly(zoom2);
+    }
+  }, 200); 
+}
+
+function zoomSlowly(zoomLevel){
+  var cunrrentZoomLevel = map.getZoom();
+  //var zoomFunction = cunrrentZoomLevel < zoomLevel ? map.zoomIn : map.zoomOut;
+  var zoom = setInterval(function(){
+    if (map.getZoom() == zoomLevel) {
+      clearInterval(zoom);
+      return true;
+    } else {
+      cunrrentZoomLevel < zoomLevel ? map.zoomIn() : map.zoomOut();
+    }
+  }, 800);
+}
+
+var index = 0;
+$(".play-control").click(function(){
+  $(sections[index]).removeClass("active");
+  index += 1;
+  if (index == sections.length) {
+    index = 0;
+  }
+  var nextSection = sections[index];
+  $(nextSection).addClass("active");
+  var scrollTop = $(nextSection).offset().top - 100;
+  $("body").scrollTop(scrollTop);
+  if (index < sections.length - 1) {
+    setActiveMarker(index);
+  };
+});
+
+
+</script>
+
+</body>
+</html>
